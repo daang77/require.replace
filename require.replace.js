@@ -18,19 +18,26 @@
 		}
 		return -1;
 	};
-	
+
 	define({
 		version: "0.3.0",
-		
+
 		// ---
 		// Called when a dependency needs to be loaded.
-		
+
 		load: function (name, req, onLoad, config) {
-			
+			var needle = '', partials;
+
+			if( name.indexOf(':') > -1 ) {
+				partials = name.split(':');
+				name = partials[0];
+				needle = partials[1];
+			}
+
 			if( !config.config.replace ) {
 				throw new Error("Require.replace need to be configured");
 			}
-			
+
 			var replaceConfig = config.config.replace,
 				moduleConfig  = replaceConfig[name] || replaceConfig,
 				toLoad = [],
@@ -38,7 +45,7 @@
 				pattern, value, path;
 
 			(function() {
-				
+
 				// Skip if we"re in build process and config.optimize is set to false
 				if ( !shouldRun ) return;
 
@@ -46,7 +53,7 @@
 
 				value = moduleConfig.value;
 				if( toString.call(moduleConfig.value) === "[object Function]" ) {
-					value = moduleConfig.value();
+					value = moduleConfig.value(needle);
 				}
 
 				// skip if the `value` is contained in the ignored value list
@@ -61,15 +68,15 @@
 					config.paths[name] = config.paths[name].replace( pattern, value );
 
 					toLoad.push( name );
-					
+
 				// else, the name is a path
 				} else {
-					
+
 					path = name.replace( pattern, value );
 					toLoad.push( path );
-					
+
 				}
-				
+
 			}());
 
 			req(toLoad, function ( value ) {
